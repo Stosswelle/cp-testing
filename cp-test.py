@@ -1,4 +1,5 @@
-import sys, getopt
+import sys
+import getopt
 import yaml
 
 import bgp
@@ -63,6 +64,7 @@ def main(argv):
                 t = {}
                 check_table[name] = t
             t[rule['Prefix']] = rule['Interfaces']
+            
         if network.check_forwarding_tables(check_table):
             print("**************************************")
             print("* Success! Control Plane is correct! *")

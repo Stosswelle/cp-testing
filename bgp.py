@@ -20,7 +20,8 @@ class Network:
             device = Device(d['Name'], d)
             self._devices[d['Name']] = device
 
-    # broadcast the topology to all devices
+    # broadcast the topology to all devices so that action "sending" 
+    # can be done by calling the next switch's "receive_bgp_ad" function
     def broadcast_topo(self):
         for d in self._devices:
             self._devices[d].set_topo(self._devices)
@@ -29,6 +30,9 @@ class Network:
     def begin_bgp(self):
         for d in self._devices:
             self._devices[d].construct_ads()
+        # After broadcast done, construct forwarding tables
+        print("\nGenerating forwarding tables...")
+        print("-------------------------------")
         for d in self._devices:
             self._devices[d].construct_forwarding_table()
         print("\n")
@@ -50,8 +54,6 @@ class Network:
                     return False
         return True
                 
-
-
 
 class Device:
     def __init__(self, name, device):
@@ -90,7 +92,7 @@ class Device:
             ads_list.append(AdMessage(prefix))
         for ad in ads_list:
             self.broadcast_ad(ad, '')
-        
+
 
     # variable: last = from which interface does this device receive this advertisement
     def broadcast_ad(self, ad, last):
@@ -127,6 +129,7 @@ class Device:
         else:
             new_ad, allow = ad, True
             print("No Policy, default allowed")
+            # update bgp_prefs if we defaultly accept this advertisement
             if ad.get_prefix() not in self._bgp_prefs:
                 self._bgp_prefs[ad.get_prefix()] = bgp_pref(ad.get_prefix(), 100, last)
             else:
@@ -163,7 +166,6 @@ class Device:
 
             
     def do_action(self, ad, actions, bound, last):
-        
         if bound == INBOUND:
             if ad.get_prefix() in self._bgp_prefs:
                 pref = copy.deepcopy(self._bgp_prefs[ad.get_prefix()])
@@ -213,7 +215,6 @@ class Device:
         return self._forwarding_table
 
 
-
 class AdMessage:
     def __init__(self, prefix):
         self._prefix = prefix
@@ -244,14 +245,21 @@ class AdMessage:
         return False
 
     def add_tag(self, tag):
-        self._tag.append(tag)
+        if tag in self._tag:
+            print("Error: Tag already exist!")
+            # sys.exit()
+        else:
+            self._tag.append(tag)
     
     def check_tag(self, tag):
         return tag in self._tag
     
     def remove_tag(self, tag):
-        self._tag.remove(tag)
-
+        if tag not in self._tag:
+            print("Error: Tag doesn't exist!")
+            # sys.exit()
+        else:
+            self._tag.remove(tag)
 
 
 class bgp_pref:
@@ -266,7 +274,9 @@ class bgp_pref:
             self._hop_name = [hop_name]
             return True
         elif pref == self._pref:
-            self._hop_name.append(hop_name)
+            if hop_name not in self._hop_name:
+                self._hop_name.append(hop_name)
             return True
         # don't update if given pref is smaller
+        print("Preference Issue")
         return False
