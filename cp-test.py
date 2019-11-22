@@ -66,12 +66,12 @@ def main(argv):
         if network.check_forwarding_tables(check_table):
             print("**************************************")
             print("* Success! Control Plane is correct! *")
-            print("**************************************")
+            print("**************************************\n")
             return
     
     print("------------------------------------")
     print("| Failure! Control Plane is wrong! |")
-    print("------------------------------------")
+    print("------------------------------------\n")
 
 
 if __name__ == "__main__":
