@@ -43,19 +43,35 @@ def main(argv):
     network.begin_bgp()
 
 
-    '''
     # build the query plan
-    query_plan = []
     try:
         with open(query_file, 'r') as f:
             data = yaml.safe_load(f)
-            # build_plan(data, query_plan)
     except IOError:
         print(query_file + " doesn't existed!")
         sys.exit()
 
-    print("finish!")
-    '''
+    rules = data['RoutingRules']
+    for cases in rules:
+        check_table = {}
+        case = cases['Case']
+        for rule in case:
+            name = rule['Device']
+            if name in check_table:
+                t = check_table[name]
+            else:
+                t = {}
+                check_table[name] = t
+            t[rule['Prefix']] = rule['Interfaces']
+        if network.check_forwarding_tables(check_table):
+            print("**************************************")
+            print("* Success! Control Plane is correct! *")
+            print("**************************************")
+            return
+    
+    print("------------------------------------")
+    print("| Failure! Control Plane is wrong! |")
+    print("------------------------------------")
 
 
 if __name__ == "__main__":
